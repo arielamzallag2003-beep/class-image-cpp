@@ -51,6 +51,44 @@ public:
     uint8_t& operator()(int x, int y, int c) { return data[index(x, y, c)]; }
     const uint8_t& operator()(int x, int y, int c) const { return data[index(x, y, c)]; }
 
+    //Addition avec une image
+    Image& operator+=(const Image& img) {
+        for (int i = 0; i < width * height * channels; i++) {
+            data[i] += img.data[i];
+            if (data[i] > 255) data[i] = 255;
+            if (data[i] < 0) data[i] = 0;
+        }
+        return *this;
+    }
+    Image operator+(const Image& img) {
+        Image I = *this;
+        I += img;
+        return I;
+    }
+
+    //Addition avec un entier
+    Image& operator+=(int a) {
+        /*m_num = m_num*r.m_den + r.m_num* m_den;
+        m_den = m_den*r.m_den;
+        simplify();*/
+        return *this;
+    }
+    Image& operator+(int a) {
+        return *this;
+    }
+
+    //Addition avec un pixel
+    Image& operator+=(bool a) {
+        /*m_num = m_num*r.m_den + r.m_num* m_den;
+        m_den = m_den*r.m_den;
+        simplify();*/
+        return *this;
+    }
+    Image& operator+() {
+        return *this;
+    }
+
+
     friend std::ostream& operator<<(std::ostream& os, const Image& img) {
         os << img.width << "x" << img.height << "x" << img.channels << " (" << img.model << ")";
         return os;
