@@ -140,7 +140,8 @@ void test_save_load()
     img4(1, 2, 0) = 255;
     img4.at(0, 0, 1) = 200;
 
-    img4.save("toto.png");
+    const bool success = img4.save("toto.png");
+    assert(success && "Probleme pour sauvegarder l'image");
 
     Image toto = Image::Load("toto.png", 3);
     assert(toto.at(0,0, 1) == 200 && "chargement ok");
