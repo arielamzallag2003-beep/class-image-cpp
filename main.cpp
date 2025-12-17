@@ -3,6 +3,13 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <cassert>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "_tparty/stb_image.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "_tparty/stb_image_write.h"
 
 class Image {
 private:
@@ -55,7 +62,48 @@ public:
         os << img.width << "x" << img.height << "x" << img.channels << " (" << img.model << ")";
         return os;
     }
+
+    bool save(char const *filename) const
+    {
+        assert(channels <5 && "4 canaux max.");
+        const int wrote = stbi_write_png(filename, width, height, channels, data.data(), channels * width);
+
+        return wrote;
+    }
+
+    static Image Load(char const *filename, int channels) {
+        Image im;
+        FILE *f = fopen(filename, "rb");
+
+        if(f == NULL)
+            goto no_file;
+        
+        stbi_uc * data;
+        data = stbi_load_from_file(f, &im.width, &im.height, &im.channels, channels);
+        
+        if(data == NULL)
+            goto no_data;
+        
+        for(int i = 0; i < im.width * im.height * im.channels; i++) {
+            im.data.push_back(data[i]);
+        }
+        
+        if(false) {
+            no_data:
+            std::cerr << "Couldnt parse file with stbi_load_from_file()\n";
+        }
+        free(data);
+        if(false) {
+            no_file:
+            std::cerr << "Couldnt open file" << filename << "\n";
+        }
+        fclose(f);
+
+        return im;
+    }
 };
+
+void test_save_load();
 
 int main() {
     try {
@@ -76,10 +124,24 @@ int main() {
         std::cout << "Pixel (1,2,0) = " << (int)img4(1,2,0) << std::endl;
         std::cout << "Pixel (0,0,1) = " << (int)img4.at(0,0,1) << std::endl;
 
+        test_save_load();
+
         std::cout << "Tout fonctionne sans Image.cpp séparé !" << std::endl;
     }
     catch (const std::exception& e) {
         std::cerr << "Erreur : " << e.what() << std::endl;
     }
     return 0;
+}
+
+void test_save_load()
+{
+    Image img4(4, 3, 3, "RGB", 50);
+    img4(1, 2, 0) = 255;
+    img4.at(0, 0, 1) = 200;
+
+    img4.save("toto.png");
+
+    Image toto = Image::Load("toto.png", 3);
+    assert(toto.at(0,0, 1) == 200 && "chargement ok");
 }
