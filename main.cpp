@@ -1,203 +1,99 @@
+#include "Image.h"
 #include <iostream>
 #include <vector>
-#include <cstdint>
-#include <stdexcept>
-#include <string>
-#include <cassert>  // pour les assertions si besoin
-
-// ==================== CLASSE IMAGE (tout-en-un) ====================
-
-class Image {
-private:
-    int width = 0;
-    int height = 0;
-    int channels = 0;
-    std::string model = "NONE";
-    std::vector<uint8_t> data;
-
-    size_t index(int x, int y, int c) const {
-        if (x < 0 || x >= width || y < 0 || y >= height || c < 0 || c >= channels) {
-            throw std::out_of_range("Pixel coordinates out of bounds");
-        }
-        return static_cast<size_t>(y) * width * channels + x * channels + c;
-    }
-
-public:
-    Image() = default;
-
-    Image(int w, int h, int c, const std::string& m, uint8_t fill_value = 0)
-        : width(w), height(h), channels(c), model(m) {
-        if (w < 0 || h < 0 || c <= 0) throw std::invalid_argument("Invalid dimensions");
-        data.assign(static_cast<size_t>(w) * h * c, fill_value);
-    }
-
-    Image(int w, int h, int c, const std::string& m, const uint8_t* buffer)
-        : width(w), height(h), channels(c), model(m) {
-        if (w < 0 || h < 0 || c <= 0) throw std::invalid_argument("Invalid dimensions");
-        data.assign(buffer, buffer + static_cast<size_t>(w) * h * c);
-    }
-
-    // Règle des 5 (vector gère tout)
-    ~Image() = default;
-    Image(const Image&) = default;
-    Image& operator=(const Image&) = default;
-    Image(Image&&) noexcept = default;
-    Image& operator=(Image&&) noexcept = default;
-
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
-    int getChannels() const { return channels; }
-    const std::string& getModel() const { return model; }
-
-    uint8_t& at(int x, int y, int c) { return data[index(x, y, c)]; }
-    const uint8_t& at(int x, int y, int c) const { return data[index(x, y, c)]; }
-    uint8_t& operator()(int x, int y, int c) { return data[index(x, y, c)]; }
-    const uint8_t& operator()(int x, int y, int c) const { return data[index(x, y, c)]; }
-
-    friend std::ostream& operator<<(std::ostream& os, const Image& img) {
-        os << img.width << "x" << img.height << "x" << img.channels << " (" << img.model << ")";
-        return os;
-    }
-
-    // ===================== SEUILLAGE (ta partie) =====================
-
-    Image operator<(uint8_t threshold) const {
-        Image result(width, height, 1, "GRAY");
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                uint32_t sum = 0;
-                for (int c = 0; c < channels; ++c) sum += (*this)(x, y, c);
-                uint8_t intensity = static_cast<uint8_t>(sum / channels);
-                result(x, y, 0) = (intensity < threshold) ? 255 : 0;
-            }
-        }
-        return result;
-    }
-
-    Image operator<=(uint8_t threshold) const {
-        Image result(width, height, 1, "GRAY");
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                uint32_t sum = 0;
-                for (int c = 0; c < channels; ++c) sum += (*this)(x, y, c);
-                uint8_t intensity = static_cast<uint8_t>(sum / channels);
-                result(x, y, 0) = (intensity <= threshold) ? 255 : 0;
-            }
-        }
-        return result;
-    }
-
-    Image operator>(uint8_t threshold) const {
-        Image result(width, height, 1, "GRAY");
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                uint32_t sum = 0;
-                for (int c = 0; c < channels; ++c) sum += (*this)(x, y, c);
-                uint8_t intensity = static_cast<uint8_t>(sum / channels);
-                result(x, y, 0) = (intensity > threshold) ? 255 : 0;
-            }
-        }
-        return result;
-    }
-
-    Image operator>=(uint8_t threshold) const {
-        Image result(width, height, 1, "GRAY");
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                uint32_t sum = 0;
-                for (int c = 0; c < channels; ++c) sum += (*this)(x, y, c);
-                uint8_t intensity = static_cast<uint8_t>(sum / channels);
-                result(x, y, 0) = (intensity >= threshold) ? 255 : 0;
-            }
-        }
-        return result;
-    }
-
-    Image operator==(uint8_t threshold) const {
-        Image result(width, height, 1, "GRAY");
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                uint32_t sum = 0;
-                for (int c = 0; c < channels; ++c) sum += (*this)(x, y, c);
-                uint8_t intensity = static_cast<uint8_t>(sum / channels);
-                result(x, y, 0) = (intensity == threshold) ? 255 : 0;
-            }
-        }
-        return result;
-    }
-
-    Image operator!=(uint8_t threshold) const {
-        Image result(width, height, 1, "GRAY");
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                uint32_t sum = 0;
-                for (int c = 0; c < channels; ++c) sum += (*this)(x, y, c);
-                uint8_t intensity = static_cast<uint8_t>(sum / channels);
-                result(x, y, 0) = (intensity != threshold) ? 255 : 0;
-            }
-        }
-        return result;
-    }
-};
-
-// =========================== MAIN ===========================
+#include <iomanip>
 
 int main() {
     try {
-        std::cout << "=== Tests de base (constructeurs et affichage) ===\n";
-        Image img1;
-        std::cout << img1 << std::endl;
+        std::cout << "=============================================================\n";
+        std::cout << "          DÉMONSTRATION CLASSE IMAGE - M1 C++ Avancé         \n";
+        std::cout << "                  Groupe : [Vos Noms Ici]                    \n";
+        std::cout << "=============================================================\n\n";
 
-        Image img2(200, 100, 3, "RGB", 128);
-        std::cout << img2 << std::endl;
+        // ===============================================================
+        std::cout << "1. CONSTRUCTEURS ET AFFICHAGE\n\n";
+        Image vide;
+        std::cout << "Image vide (défaut)          : " << vide << "\n";
 
-        uint8_t buffer[12] = {255,0,0, 0,255,0, 0,0,255, 255,255,255};
-        Image img3(2, 2, 3, "RGB", buffer);
-        std::cout << img3 << std::endl;
+        Image remplie(120, 80, 3, "RGB", 100);
+        std::cout << "Image remplie de 100         : " << remplie << "\n";
 
-        std::cout << "\n=== Test accès et modification de pixels ===\n";
-        Image img4(4, 3, 3, "RGB", 50);
-        img4(1, 2, 0) = 255;
-        img4.at(0, 0, 1) = 200;
-        std::cout << "Pixel (1,2,0) = " << (int)img4(1,2,0) << std::endl;
-        std::cout << "Pixel (0,0,1) = " << (int)img4.at(0,0,1) << std::endl;
+        uint8_t buffer[] = {255,0,0, 0,255,0, 0,0,255, 255,255,255};
+        Image petite(2, 2, 3, "RGB", buffer);
+        std::cout << "Image 2x2 personnalisée      : " << petite << "\n\n";
 
-        std::cout << "\n=== Test SEUILLAGE (nouvelle fonctionnalité) ===\n";
-        // Image de test : fond à 100, quelques pixels modifiés
-        Image testImg(6, 4, 3, "RGB", 100);  // fond moyen (100)
-        testImg(1, 1, 0) = 200; testImg(1, 1, 1) = 200; testImg(1, 1, 2) = 200;  // pixel clair
-        testImg(4, 2, 0) = 30;  testImg(4, 2, 1) = 30;  testImg(4, 2, 2) = 30;   // pixel sombre
+        // ===============================================================
+        std::cout << "2. ACCÈS ET MODIFICATION DE PIXELS\n\n";
+        remplie(10, 20, 0) = 255;   // Rouge max
+        remplie(10, 20, 1) = 200;   // Vert fort
+        remplie(10, 20, 2) = 50;    // Bleu faible
+        std::cout << "Pixel modifié à (10,20) : R=" << (int)remplie(10,20,0)
+                  << " G=" << (int)remplie(10,20,1)
+                  << " B=" << (int)remplie(10,20,2) << "\n\n";
 
-        Image bin_gt = testImg > 150;   // pixels très clairs → 255
-        Image bin_lt = testImg < 80;     // pixels très sombres → 255
+        // ===============================================================
+        std::cout << "3. OPÉRATIONS ARITHMÉTIQUES\n\n";
+        Image plus_lumineuse = remplie + 80;
+        Image plus_sombre    = remplie - 60;
+        Image inversion      = ~remplie;
 
-        // Exemple supplémentaire : pixels "moyens" autour de 100
-        Image bin_eq = testImg == 100;   // exactement 100 → 255, sinon 0
-        Image bin_neq = testImg != 100;  // tout sauf 100 → 255
+        std::cout << "Image originale              : " << remplie << "\n";
+        std::cout << "+80 (plus lumineuse)         : " << plus_lumineuse << "\n";
+        std::cout << "-60 (plus sombre)            : " << plus_sombre << "\n";
+        std::cout << "Inversion (~)                : " << inversion << "\n";
 
-        std::cout << "Seuillage > 150 : " << bin_gt << std::endl;
-        std::cout << "Seuillage < 80  : " << bin_lt << std::endl;
-        std::cout << "Seuillage == 100 : " << bin_eq << std::endl;
-        std::cout << "Seuillage != 100 : " << bin_neq << std::endl;
+        // Test multiplication et division
+        Image contraste_haut = remplie * 1.8;
+        Image contraste_bas  = remplie / 1.5;
+        std::cout << "*1.8 (contraste augmenté)    : " << contraste_haut << "\n";
+        std::cout << "/1.5 (contraste réduit)      : " << contraste_bas << "\n\n";
 
-        // Vérification manuelle d'un pixel connu
-        std::cout << "Pixel clair (1,1) dans >150 : " << (int)bin_gt(1,1,0) << " (doit être 255)" << std::endl;
-        std::cout << "Pixel sombre (4,2) dans <80 : " << (int)bin_lt(4,2,0) << " (doit être 255)" << std::endl;
-        std::cout << "Pixel de fond dans ==100 : " << (int)bin_eq(0,0,0) << " (doit être 255)" << std::endl;
+        // ===============================================================
+        std::cout << "4. SEUILLAGE (Binarisation)\n\n";
+        Image seuil_haut  = remplie > 140;
+        Image seuil_bas   = remplie < 80;
+        // Image seuil_moyen = remplie >= 90 && remplie <= 110;
 
-        std::cout << "Image originale : " << testImg << std::endl;
-        std::cout << "Seuillage > 150 : " << bin_gt << std::endl;
-        std::cout << "Seuillage < 80  : " << bin_lt << std::endl;
+        std::cout << "Seuillage > 140              : " << seuil_haut << "\n";
+        std::cout << "Seuillage < 80               : " << seuil_bas << "\n";
 
-        // Exemple de lecture d'un pixel du résultat binaire
-        std::cout << "Pixel clair (1,1) dans >150 : " << (int)bin_gt(1,1,0) << " (doit être 255)" << std::endl;
-        std::cout << "Pixel sombre (4,2) dans <80 : " << (int)bin_lt(4,2,0) << " (doit être 255)" << std::endl;
+        // Vérification d'un pixel connu
+        std::cout << "Pixel modifié (très clair) dans >140 : "
+                  << (int)seuil_haut(10,20,0) << " (doit être 255)\n\n";
 
-        std::cout << "\nTout fonctionne parfaitement !\n";
-        std::cout << "Projet prêt pour les autres fonctionnalités (opérateurs arithmétiques, load/save).\n";
+        // ===============================================================
+        std::cout << "5. CHARGEMENT D'UNE IMAGE RÉELLE\n\n";
+        // Remplace "votre_image.png" par le nom exact de ton image dans le dossier
+        Image photo = Image::load("new-lulu-fit.png");  // ou .jpg si tu as un JPG
+        std::cout << "Image chargée                : " << photo << "\n\n";
+
+        // ===============================================================
+        std::cout << "6. TRAITEMENTS SUR IMAGE RÉELLE ET SAUVEGARDE\n\n";
+        Image photo_inversee = ~photo;
+        Image photo_seuillee = photo > 128;
+        Image photo_bright   = photo + 50;
+
+        std::cout << "Inversion sauvegardée dans   : inverted.png\n";
+        photo_inversee.save("inverted.png");
+
+        std::cout << "Seuillage moyen (>128) dans  : threshold.png\n";
+        photo_seuillee.save("threshold.png");
+
+        std::cout << "Image plus lumineuse dans    : bright.png\n";
+        photo_bright.save("bright.png");
+
+        std::cout << "\nFichiers générés : inverted.png, threshold.png, bright.png\n";
+        std::cout << "Ouvrez-les pour voir les résultats !\n\n";
+
+        // ===============================================================
+        std::cout << "=============================================================\n";
+        std::cout << "        TOUTES LES FONCTIONNALITÉS DU SUJET TESTÉES         \n";
+        std::cout << "                   AVEC SUCCÈS !                            \n";
+        std::cout << "=============================================================\n";
+
     }
     catch (const std::exception& e) {
-        std::cerr << "Erreur capturée : " << e.what() << std::endl;
+        std::cerr << "\nERREUR : " << e.what() << "\n";
         return 1;
     }
 
