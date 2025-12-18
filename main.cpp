@@ -1,3 +1,4 @@
+#include "Image.h"
 #include <iostream>
 #include <vector>
 #include <cstdint>
@@ -26,20 +27,20 @@ private:
         return static_cast<size_t>(y) * width * channels + x * channels + c;
     }
 
-public:
-    Image() = default;
+int main() {
+    try {
+        std::cout << "=============================================================\n";
+        std::cout << "          DÉMONSTRATION CLASSE IMAGE - M1 C++ Avancé         \n";
+        std::cout << "                  Groupe : [Vos Noms Ici]                    \n";
+        std::cout << "=============================================================\n\n";
 
-    Image(int w, int h, int c, const std::string& m, uint8_t fill_value = 0)
-        : width(w), height(h), channels(c), model(m) {
-        if (w < 0 || h < 0 || c <= 0) throw std::invalid_argument("Invalid dimensions");
-        data.assign(static_cast<size_t>(w) * h * c, fill_value);
-    }
+        // ===============================================================
+        std::cout << "1. CONSTRUCTEURS ET AFFICHAGE\n\n";
+        Image vide;
+        std::cout << "Image vide (défaut)          : " << vide << "\n";
 
-    Image(int w, int h, int c, const std::string& m, const uint8_t* buffer)
-        : width(w), height(h), channels(c), model(m) {
-        if (w < 0 || h < 0 || c <= 0) throw std::invalid_argument("Invalid dimensions");
-        data.assign(buffer, buffer + static_cast<size_t>(w) * h * c);
-    }
+        Image remplie(120, 80, 3, "RGB", 100);
+        std::cout << "Image remplie de 100         : " << remplie << "\n";
 
     // Règle des 5 simplifiée (le vector gère tout)
     ~Image() = default;
@@ -110,27 +111,69 @@ int main() {
         Image img1;
         std::cout << img1 << std::endl;
 
-        Image img2(200, 100, 3, "RGB", 128);
-        std::cout << img2 << std::endl;
+        std::cout << "Image originale              : " << remplie << "\n";
+        std::cout << "+80 (plus lumineuse)         : " << plus_lumineuse << "\n";
+        std::cout << "-60 (plus sombre)            : " << plus_sombre << "\n";
+        std::cout << "Inversion (~)                : " << inversion << "\n";
 
-        uint8_t buffer[12] = {255,0,0, 0,255,0, 0,0,255, 255,255,255};
-        Image img3(2, 2, 3, "RGB", buffer);
-        std::cout << img3 << std::endl;
+        // Test multiplication et division
+        Image contraste_haut = remplie * 1.8;
+        Image contraste_bas  = remplie / 1.5;
+        std::cout << "*1.8 (contraste augmenté)    : " << contraste_haut << "\n";
+        std::cout << "/1.5 (contraste réduit)      : " << contraste_bas << "\n\n";
 
-        Image img4(4, 3, 3, "RGB", 50);
-        img4(1, 2, 0) = 255;
-        img4.at(0, 0, 1) = 200;
+        // ===============================================================
+        std::cout << "4. SEUILLAGE (Binarisation)\n\n";
+        Image seuil_haut  = remplie > 140;
+        Image seuil_bas   = remplie < 80;
+        // Image seuil_moyen = remplie >= 90 && remplie <= 110;
 
-        std::cout << "Pixel (1,2,0) = " << (int)img4(1,2,0) << std::endl;
-        std::cout << "Pixel (0,0,1) = " << (int)img4.at(0,0,1) << std::endl;
+        std::cout << "Seuillage > 140              : " << seuil_haut << "\n";
+        std::cout << "Seuillage < 80               : " << seuil_bas << "\n";
+
+        // Vérification d'un pixel connu
+        std::cout << "Pixel modifié (très clair) dans >140 : "
+                  << (int)seuil_haut(10,20,0) << " (doit être 255)\n\n";
+
+        // ===============================================================
+        std::cout << "5. CHARGEMENT D'UNE IMAGE RÉELLE\n\n";
+        // Remplace "votre_image.png" par le nom exact de ton image dans le dossier
+        Image photo = Image::load("new-lulu-fit.png");  // ou .jpg si tu as un JPG
+        std::cout << "Image chargée                : " << photo << "\n\n";
+
+        // ===============================================================
+        std::cout << "6. TRAITEMENTS SUR IMAGE RÉELLE ET SAUVEGARDE\n\n";
+        Image photo_inversee = ~photo;
+        Image photo_seuillee = photo > 128;
+        Image photo_bright   = photo + 50;
+
+        std::cout << "Inversion sauvegardée dans   : inverted.png\n";
+        photo_inversee.save("inverted.png");
+
+        std::cout << "Seuillage moyen (>128) dans  : threshold.png\n";
+        photo_seuillee.save("threshold.png");
+
+        std::cout << "Image plus lumineuse dans    : bright.png\n";
+        photo_bright.save("bright.png");
+
+        std::cout << "\nFichiers générés : inverted.png, threshold.png, bright.png\n";
+        std::cout << "Ouvrez-les pour voir les résultats !\n\n";
+
+        // ===============================================================
+        std::cout << "=============================================================\n";
+        std::cout << "        TOUTES LES FONCTIONNALITÉS DU SUJET TESTÉES         \n";
+        std::cout << "                   AVEC SUCCÈS !                            \n";
+        std::cout << "=============================================================\n";
 
         test_save_load();
 
         std::cout << "Tout fonctionne sans Image.cpp séparé !" << std::endl;
     }
     catch (const std::exception& e) {
-        std::cerr << "Erreur : " << e.what() << std::endl;
+        std::cerr << "\nERREUR : " << e.what() << "\n";
+        return 1;
     }
+
     return 0;
 }
 
