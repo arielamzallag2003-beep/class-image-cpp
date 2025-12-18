@@ -26,11 +26,11 @@ void Image::enlargeTo(int newWidth, int newHeight) {
             }
         }
     }
-    // Le reste est déjà à 0 grâce au constructeur
+
     *this = std::move(temp);
 }
 
-// Clamping helpers
+
 uint8_t Image::clampAdd(int a, int b) {
     int res = a + b;
     return static_cast<uint8_t>(res < 0 ? 0 : (res > 255 ? 255 : res));
