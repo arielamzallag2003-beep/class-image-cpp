@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/ivo/Desktop/esgi cours/c++ avance/class-image-cpp/main'
+relocations:     []
+...
